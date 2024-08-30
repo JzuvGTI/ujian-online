@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Ujian Online</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@^2.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.12.0/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .calendar-day {
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calendar-day:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .calendar-header {
+            font-weight: bold;
+        }
+        .today {
+            background-color: #549afb;
+            color: white;
+        }
+        @media (max-width: 600px) {
+            .calendar-header {
+                font-size: 0.75rem;
+            }
+            .calendar-day {
+                font-size: 0.75rem;
+                padding: 0.25rem;
+            }
+        }
+
+        .sidebar-button {
+            padding: 0.5rem 1rem;
+            background-color: #374151;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .sidebar-button:hover {
+            background-color: #4b5563;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .sidebar {
+            width: 16rem;
+            background-color: #1f2937;
+            padding: 1rem;
+            height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+            z-index: 50;
+        }
+
+        .sidebar-open {
+            transform: translateX(0);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 40;
+        }
+
+        .overlay-open {
+            opacity: 1;
+        }
+
+        .card {
+            background-color: #2d3748;
+            border-radius: 0.375rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        /* Responsive adjustments for right sidebar */
+        @media (max-width: 1024px) {
+            .right-sidebar {
+                width: auto;
+                position: static;
+                margin-top: 1rem;
+            }
+        }
+
+        /* Adjust content area when sidebar is open on large screens */
+        .content-area {
+            transition: margin-left 0.3s;
+            padding: 1rem;
+            margin-left: 0;
+        }
+
+        .sidebar-open + .content-area {
+            margin-left: 16rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white" x-data="{ open: false }" @resize.window="if (window.innerWidth >= 1024) open = true; else open = false">
+    <!-- Overlay -->
+    <div x-show="open" @click="open = false" :class="{'overlay-open': open, 'overlay': true}" class="fixed inset-0"></div>
+
+    <!-- Navbar -->
+    <nav class="bg-gray-800 p-4 shadow-md flex justify-between items-center z-30 relative">
+        <div class="flex items-center">
+            <!-- Burger Menu Button (Visible on Mobile) -->
+            <button @click="open = !open" class="text-white mr-4 focus:outline-none">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            <!-- Logo -->
+            <div class="text-2xl font-bold">Admin Dashboard</div>
+        </div>
+        <!-- Icons and Profile Picture -->
+        <div class="flex items-center space-x-4">
+            <!-- Only show on larger screens -->
+            <div class="hidden lg:block text-sm">Admin User</div>
+            <!-- Icons (Visible on Mobile and Larger Screens) -->
+            <div class="flex space-x-4">
+                <button class="focus:outline-none">
+                    <i class="fas fa-bell text-white text-xl"></i>
+                </button>
+                <button class="focus:outline-none">
+                    <i class="fas fa-envelope text-white text-xl"></i>
+                </button>
+                <!-- Profile Image -->
+                <img src="https://via.placeholder.com/40" class="rounded-full w-10 h-10" alt="Profile Image">
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside :class="{'sidebar-open': open}" class="sidebar">
+        <ul class="space-y-4">
+            <li class="text-lg font-semibold text-blue-400">Dashboard</li>
+            <li><a href="#" class="sidebar-button"><i class="fas fa-home mr-2"></i> Beranda situs</a></li>
+            <li><a href="#" class="sidebar-button"><i class="fas fa-calendar-alt mr-2"></i> Kalender</a></li>
+            <li><a href="#" class="sidebar-button"><i class="fas fa-file-alt mr-2"></i> File pribadi</a></li>
+            <li><a href="#" class="sidebar-button"><i class="fas fa-graduation-cap mr-2"></i> Kursus Yang Saya Ikuti</a></li>
+            <li><a href="settings/profile.html" class="sidebar-button"><i class="fas fa-users mr-2"></i> Edit Profile</a></li>
+            <hr class="border-gray-600">
+            <li><a href="#" class="sidebar-button"><i class="fas fa-cogs mr-2"></i> Administrasi Situs</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content-area flex-1">
+        <!-- Profile Section -->
+        <div class="bg-gray-800 p-6 rounded shadow-md mb-4 flex items-center">
+            <!-- Profile Image -->
+            <img src="https://via.placeholder.com/50" class="rounded-full w-12 h-12 mr-4" alt="Profile Image">
+            <!-- Admin User Name -->
+            <div class="text-xl font-bold">Admin User</div>
+        </div>
+
+        <!-- Dashboard Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Total Exams Card -->
+            <div class="card">
+                <h3 class="text-lg font-bold mb-2">Total Exams</h3>
+                <p class="text-2xl font-semibold">124</p>
+            </div>
+            <!-- Total Students Card -->
+            <div class="card">
+                <h3 class="text-lg font-bold mb-2">Total Students</h3>
+                <p class="text-2xl font-semibold">945</p>
+            </div>
+            <!-- Total Pass Rate Card -->
+            <div class="card">
+                <h3 class="text-lg font-bold mb-2">Pass Rate</h3>
+                <p class="text-2xl font-semibold">78%</p>
+            </div>
+        </div>
+
+        <!-- Charts and Graphs -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Exam Performance Chart -->
+            <div class="card">
+                <h3 class="text-lg font-bold mb-2">Exam Performance</h3>
+                <div class="chart-container">
+                    <canvas id="examPerformanceChart"></canvas>
+                </div>
+            </div>
+            <!-- Student Participation Chart -->
+            <div class="card">
+                <h3 class="text-lg font-bold mb-2">Student Participation</h3>
+                <div class="chart-container">
+                    <canvas id="studentParticipationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Exams Table -->
+        <div class="bg-gray-800 p-4 rounded shadow-md">
+            <h2 class="text-xl font-bold mb-2">Recent Exams</h2>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-700">
+                        <th class="p-2 text-left">Exam Name</th>
+                        <th class="p-2 text-left">Date</th>
+                        <th class="p-2 text-left">Participants</th>
+                        <th class="p-2 text-left">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="p-2">Math Test</td>
+                        <td class="p-2">2024-08-15</td>
+                        <td class="p-2">120</td>
+                        <td class="p-2 text-green-400">Completed</td>
+                    </tr>
+                    <tr>
+                        <td class="p-2">Science Quiz</td>
+                        <td class="p-2">2024-08-20</td>
+                        <td class="p-2">90</td>
+                        <td class="p-2 text-yellow-400">Ongoing</td>
+                    </tr>
+                    <!-- Add more rows as needed -->
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <script>
+        
+
+        // Initialize charts
+        document.addEventListener('DOMContentLoaded', function() {
+            var ctx1 = document.getElementById('examPerformanceChart').getContext('2d');
+            var examPerformanceChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['Math', 'Science', 'English', 'History', 'Geography'],
+                    datasets: [{
+                        label: 'Scores',
+                        data: [85, 90, 78, 88, 92],
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            var ctx2 = document.getElementById('studentParticipationChart').getContext('2d');
+            var studentParticipationChart = new Chart(ctx2, {
+                type: 'pie',
+                data: {
+                    labels: ['Participated', 'Not Participated'],
+                    datasets: [{
+                        label: 'Participation',
+                        data: [65, 35],
+                        backgroundColor: ['rgba(59, 130, 246, 0.5)', 'rgba(107, 114, 128, 0.5)'],
+                        borderColor: ['rgba(59, 130, 246, 1)', 'rgba(107, 114, 128, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return tooltipItem.label + ': ' + tooltipItem.raw + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+        // Adjust sidebar on window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) {
+                document.querySelector('aside').classList.add('sidebar-open');
+                document.querySelector('.overlay').classList.remove('overlay-open');
+                document.querySelector('.content-area').classList.add('sidebar-open');
+            } else {
+                document.querySelector('aside').classList.remove('sidebar-open');
+                document.querySelector('.overlay').classList.remove('overlay-open');
+                document.querySelector('.content-area').classList.remove('sidebar-open');
+            }
+        });
+    </script>
+</body>
+</html>+
